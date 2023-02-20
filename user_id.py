@@ -26,12 +26,10 @@ class UserID(loader.Module):
             user = await message.client.get_entity(message.sender_id)
 
          keyboard = [
-            [
                 {
                     "text": "🚫 Close",
                     "callback": self.inline__close,
                 }
-            ],
         ]
 
         await self.inline.form(
