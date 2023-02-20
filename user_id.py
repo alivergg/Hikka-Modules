@@ -25,12 +25,7 @@ class UserID(loader.Module):
         except ValueError:
             user = await message.client.get_entity(message.sender_id)
 
-         keyboard = [
-                {
-                    "text": "🚫 Close",
-                    "callback": self.inline__close,
-                }
-        ]
+        keyboard.append([{"text": "🚫 Close", "callback": self.inline__close}])
 
         await self.inline.form(
             text=f"<b>Имя:</b> <code>{user.first_name}</code>\n"
