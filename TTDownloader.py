@@ -23,6 +23,7 @@ class DownloadeTTMod(loader.Module):
     .dltt {url} OR (reply to message)
     """
 
+    strings = {"name": "TTDownloader"}
 
     async def dlttcmd(self, message: Message):
         """TikTok video downloader"""
