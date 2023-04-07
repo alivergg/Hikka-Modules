@@ -20,6 +20,7 @@ from .. import loader, utils
 class DownloadeTTMod(loader.Module):
     """
     Module for downdoad tik-tok videos.
+    
     .dltt {url} OR (reply to message)
     """
 
