@@ -2,6 +2,8 @@
 
 # Module author: @alivergg
 from .. import loader, utils
+import logging
+from telethon.tl.patched import Message
 
 
 @loader.tds
@@ -10,7 +12,7 @@ class UserID(loader.Module):
 
     strings = {"name": "UserID Telegram"}
 
-    async def useridcmd(self, message):
+    async def useridcmd(self, message: Message):
         """Команда .userid <@ или реплай> показывает ID выбранного пользователя."""
         args = utils.get_args_raw(message)
         reply = await message.get_reply_message()
@@ -22,14 +24,15 @@ class UserID(loader.Module):
                 )
             else:
                 user = await message.client.get_entity(reply.sender_id)
-        except ValueError:
+        except:
             user = await message.client.get_entity(message.sender_id)
 
         keyboard = [{"text": "🚫 Close", "callback": self.inline__close}]
 
         await self.inline.form(
             text=f"<b>Имя:</b> <code>{user.first_name}</code>\n"
-            f"<b>ID:</b> <code>{user.id}</code>",
+            f"<b>ID:</b> <code>{user.id}</code>\n"
+            f"<b>ChatID:</b> <code>{message.chat_id}</code>",
             message=message,
             reply_markup=keyboard,
         )
