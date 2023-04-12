@@ -28,7 +28,7 @@ class DownloadeTTMod(loader.Module):
 
     async def dlttcmd(self, message: Message):
         """TikTok video downloader"""
-        chat = "@ttdowsbot"
+        chat = "@ttk_downloader_bot"
         reply = await message.get_reply_message()
         
         async with message.client.conversation(chat) as conv:
@@ -45,9 +45,10 @@ class DownloadeTTMod(loader.Module):
                 
                 await sleep(4)
                 
-                r = await message.client.get_messages(chat, limit=1)
+                r = await conv.get_response()
+                #r = await message.client.get_messages(chat, limit=1)
 
-                if r[0].media is not None:
+                if r.media is not None:
                     await message.client.send_file(
                         message.to_id, r[0].media, reply_to=reply
                     )
