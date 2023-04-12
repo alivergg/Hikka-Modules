@@ -49,7 +49,7 @@ class DownloadeTTMod(loader.Module):
 
                 if r.media is not None:
                     await message.client.send_file(
-                        message.to_id, r[0].media, reply_to=reply
+                        message.to_id, r.media, reply_to=reply
                     )
 
                     await message.delete()
