@@ -43,7 +43,6 @@ class DownloadeTTMod(loader.Module):
             try:
                 await conv.send_message(text)
                 
-                await sleep(4)
                 
                 r = await conv.get_response()
                 #r = await message.client.get_messages(chat, limit=1)
