@@ -1,4 +1,5 @@
 import os
+import glob
 import subprocess
 
 from telethon.tl.types import Message
@@ -71,17 +72,19 @@ class YouTubeMod(loader.Module):
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.STDOUT,
                 )
-                try:
-                    os.remove(f"{filename}.webp")
-                except:
-                    os.remove(f"{filename}{ext}")
-
+                
                 await self._client.send_file(message.peer_id, out)
-                os.remove(out)
 
             else:
                 await self._client.send_file(message.peer_id, path)
-                os.remove(path)
+
+            try:
+                file_pattern = os.path.join("/tmp", filename + '.*')
+                file_list = glob.glob(file_pattern)
+                for file_path in file_list:
+                    os.remove(file_path)
+            except:
+                pass
 
         if message.out:
             await message.delete()
