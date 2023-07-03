@@ -25,33 +25,76 @@ class DownloadeTTMod(loader.Module):
     """
 
     strings = {"name": "TTDownloader"}
+    
+    async def get_video(self, url: str, message):
+        chat = "@ttk_downloader_bot"
+        async with message.client.conversation(chat) as conv:
+            await conv.send_message(url)
+            r = await conv.get_response()
+            
+            if r.media is not None:
+                return r.media
+                
+            return
+
 
     async def dlttcmd(self, message: Message):
         """TikTok video downloader"""
-        chat = "@ttk_downloader_bot"
         reply = await message.get_reply_message()
+        text = utils.get_args_raw(message)
         
-        async with message.client.conversation(chat) as conv:
-        
-            text = utils.get_args_raw(message)
+        if reply:
+            text = await message.get_reply_message()
             
-            if reply:
-                text = await message.get_reply_message()
+        await message.edit("<b>Downloading...</b>")
+            
+        try:
+            video = await self.get_video(text, message)
+            
+            if video:
+                await message.client.send_file(
+                    message.to_id, video, reply_to=reply
+                )
+                await message.delete()
+
+            else:
+
+                await message.edit("<b>Failed to download video.</b>")
+
+            await message.client.delete_dialog(chat)
+            
+        except YouBlockedUserError:
+        
+            await message.edit("<code>Разблокируй @ttk_downloader_bot</code>")
+            return
                 
+                
+    async def watcher(self, message):
+        try:
+            me_id = (await message.client.get_me()).id
+            if message.sender_id != me_id:
+                return
+                
+            chat = await message.client.get_entity(message.to_id)
+            if chat.id == 5401383549:
+                return
+                
+            if len(message.text) < 3:
+                return
+        except:
+            return
+            
+        if message.text.startswith('<a href="https://vm.tiktok.com/'):
+            reply = await message.get_reply_message()
             await message.edit("<b>Downloading...</b>")
             
             try:
-                await conv.send_message(text)
+                video = await self.get_video(message.text, message)
                 
-                
-                r = await conv.get_response()
-                #r = await message.client.get_messages(chat, limit=1)
-
-                if r.media is not None:
+                if video:
                     await message.client.send_file(
-                        message.to_id, r.media, reply_to=reply
+                        message.to_id, video, reply_to=reply
                     )
-
                     await message.delete()
 
                 else:
@@ -62,7 +105,5 @@ class DownloadeTTMod(loader.Module):
                 
             except YouBlockedUserError:
             
-                await message.edit("<code>Разблокируй @ttdowsbot</code>")
+                await message.edit("<code>Разблокируй @ttk_downloader_bot</code>")
                 return
-            
-            
