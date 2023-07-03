@@ -32,6 +32,7 @@ class DownloadeTTMod(loader.Module):
             await conv.send_message(url)
             r = await conv.get_response()
             
+            await message.client.delete_dialog(chat)
             if r.media is not None:
                 return r.media
                 
@@ -60,8 +61,6 @@ class DownloadeTTMod(loader.Module):
             else:
 
                 await message.edit("<b>Failed to download video.</b>")
-
-            await message.client.delete_dialog(chat)
             
         except YouBlockedUserError:
         
@@ -100,9 +99,7 @@ class DownloadeTTMod(loader.Module):
                 else:
 
                     await message.edit("<b>Failed to download video.</b>")
-
-                await message.client.delete_dialog(chat)
-                
+                    
             except YouBlockedUserError:
             
                 await message.edit("<code>Разблокируй @ttk_downloader_bot</code>")
