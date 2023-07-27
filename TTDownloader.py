@@ -6,6 +6,7 @@ import io
 import logging
 import os
 from asyncio import sleep
+import aiohttp
 
 from telethon.tl.patched import Message
 
@@ -25,18 +26,41 @@ class DownloadeTTMod(loader.Module):
     """
 
     strings = {"name": "TTDownloader"}
-    
-    async def get_video(self, url: str, message):
-        chat = "@ttk_downloader_bot"
-        async with message.client.conversation(chat) as conv:
-            await conv.send_message(url)
-            r = await conv.get_response()
+
+    def __init__(self):
+        self.config = loader.ModuleConfig(
+            loader.ConfigValue(
+                "rapidapikey",
+                "",
+                "X-RapidAPI-Key",
+                validator=loader.validators.String(),
+            ),
+            loader.ConfigValue(
+                "caption",
+                "",
+                "Video caption",
+                validator=loader.validators.String(),
+            )
+        )
+
+    async def download(self, link):
+        url = "https://tiktok-downloader-download-tiktok-videos-without-watermark.p.rapidapi.com/vid/index"
+
+        headers = {
+            "X-RapidAPI-Key": self.config["rapidapikey"],
+            "X-RapidAPI-Host": "tiktok-downloader-download-tiktok-videos-without-watermark.p.rapidapi.com"
+        }
+
+        querystring = {"url": link}
+
+        async with aiohttp.ClientSession() as client:
+            async with client.request('GET', url, headers=headers, params=querystring) as r:
+                video_json = await r.json()
+
+                if isinstance(video_json, list):
+                    video_json = video_json[0]
             
-            await message.client.delete_dialog(chat)
-            if r.media is not None:
-                return r.media
-                
-            return
+                return video_json['video'][0]
 
 
     async def dlttcmd(self, message: Message):
@@ -46,16 +70,24 @@ class DownloadeTTMod(loader.Module):
         
         if reply:
             text = await message.get_reply_message()
+
+        if self.config["rapidapikey"] == '':
+            return await message.edit("<b>RapidAPI-Key not found!</b>")
             
         await message.edit("<b>Downloading...</b>")
             
         try:
-            video = await self.get_video(text, message)
+            video = await self.download(text)
             
             if video:
-                await message.client.send_file(
-                    message.to_id, video, reply_to=reply
+
+                await message.answer_video(
+                    video, 
+                    caption=self.config["caption"], 
+                    supports_streaming=True
+                
                 )
+
                 await message.delete()
 
             else:
@@ -74,26 +106,30 @@ class DownloadeTTMod(loader.Module):
             if message.sender_id != me_id:
                 return
                 
-            chat = await message.client.get_entity(message.to_id)
-            if chat.id == 5401383549:
-                return
-                
-            if len(message.text) < 3:
+            if len(message.text) < 5:
                 return
         except:
             return
+        
+        if self.config["rapidapikey"] == '':
+            return await message.edit("<b>RapidAPI-Key not found!</b>")
             
         if message.text.startswith('<a href="https://vm.tiktok.com/'):
             reply = await message.get_reply_message()
             await message.edit("<b>Downloading...</b>")
             
             try:
-                video = await self.get_video(message.text, message)
+                video = await self.download(message.text)
                 
                 if video:
-                    await message.client.send_file(
-                        message.to_id, video, reply_to=reply
+
+                    await message.answer_video(
+                        video, 
+                        caption=self.config["caption"], 
+                        supports_streaming=True
+                    
                     )
+
                     await message.delete()
 
                 else:
