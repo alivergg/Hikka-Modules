@@ -107,8 +107,8 @@ class DownloadeTTMod(loader.Module):
             
         except Exception as ex:
                 
-            if not video.startswith('http'):
-                await message.edit(video)
+            if not 'http' in str(video):
+                await message.edit(str(video))
             else:
                 await message.edit("<b>Failed to download video.</b>")
 
@@ -150,8 +150,8 @@ class DownloadeTTMod(loader.Module):
 
                     await message.edit("<b>Failed to download video.</b>")
             except:
-                if not video.startswith('http'):
-                    await message.edit(video)
+                if not 'http' in str(video):
+                    await message.edit(str(video))
                 else:
                     await message.edit("<b>Failed to download video.</b>")
                     
