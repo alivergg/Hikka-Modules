@@ -2,11 +2,10 @@
 
 # Module author: @alivergg
 
-import io
 import logging
-import os
 from asyncio import sleep
 import aiohttp
+from bs4 import BeautifulSoup
 
 from telethon.tl.patched import Message
 
@@ -46,6 +45,9 @@ class DownloadeTTMod(loader.Module):
         )
 
     async def download(self, link):
+        soup = BeautifulSoup(link, 'html.parser')
+        link = soup.get_text()
+
         url = "https://tiktok-downloader-download-tiktok-videos-without-watermark.p.rapidapi.com/index"
 
         headers = {
@@ -58,14 +60,11 @@ class DownloadeTTMod(loader.Module):
         async with aiohttp.ClientSession() as client:
             async with client.request('GET', url, headers=headers, params=querystring) as r:
                 video_json = await r.json()
-
-                logging.info(link)
-                logging.info(video_json)
-
-                # if isinstance(video_json, list):
-                #     video_json = video_json[0]
+                
+                if isinstance(video_json, list):
+                    video_json = video_json[0]
             
-                # return video_json['video'][0]
+                return video_json['video'][0]
 
 
     async def dlttcmd(self, message: Message):
@@ -125,28 +124,24 @@ class DownloadeTTMod(loader.Module):
             reply = await message.get_reply_message()
             await message.edit("<b>Downloading...</b>")
             
-
+            # try:
             video = await self.download(message.text)
             
             if video:
                 
-                if reply:
-                    await reply.reply_video(
-                        video, 
-                        caption=self.config["caption"], 
-                        supports_streaming=True
-                    )
-                else:
-                    await message.answer_video(
-                        video, 
-                        caption=self.config["caption"], 
-                        supports_streaming=True
-                    )
+                await message.client.send_file(
+                    message.to_id, 
+                    video, 
+                    reply_to=reply,
+                    supports_streaming=True
+                )
                 
                 await message.delete()
 
             else:
 
                 await message.edit("<b>Failed to download video.</b>")
+            # except:
+            #     await message.edit("<b>Failed to download video.</b>")
                     
   
