@@ -17,6 +17,8 @@ from telethon.tl.types import MessageEntityTextUrl, MessageEntityUrl
 from .. import loader, utils
 
 
+logger = logging.getLogger(__name__)
+
 @loader.tds
 class DownloadeTTMod(loader.Module):
     """
@@ -79,6 +81,7 @@ class DownloadeTTMod(loader.Module):
         try:
             video = await self.download(text)
             
+            logging.info(video)
             if video:
 
                 await message.answer_video(
