@@ -122,32 +122,28 @@ class DownloadeTTMod(loader.Module):
             reply = await message.get_reply_message()
             await message.edit("<b>Downloading...</b>")
             
-            try:
-                video = await self.download(message.text)
-                
-                if video:
-                    
-                    if reply:
-                        await reply.reply_video(
-                            video, 
-                            caption=self.config["caption"], 
-                            supports_streaming=True
-                        )
-                    else:
-                        await message.answer_video(
-                            video, 
-                            caption=self.config["caption"], 
-                            supports_streaming=True
-                        )
-                    
-                    await message.delete()
 
+            video = await self.download(message.text)
+            
+            if video:
+                
+                if reply:
+                    await reply.reply_video(
+                        video, 
+                        caption=self.config["caption"], 
+                        supports_streaming=True
+                    )
                 else:
-
-                    await message.edit("<b>Failed to download video.</b>")
-                    
-            except Exception as ex:
+                    await message.answer_video(
+                        video, 
+                        caption=self.config["caption"], 
+                        supports_streaming=True
+                    )
                 
-                logging.info(ex)
-                await message.edit("<code>Р</code>")
-                return
+                await message.delete()
+
+            else:
+
+                await message.edit("<b>Failed to download video.</b>")
+                    
+  
