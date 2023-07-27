@@ -110,11 +110,11 @@ class DownloadeTTMod(loader.Module):
                 return
         except:
             return
-        
-        if self.config["rapidapikey"] == '':
-            return await message.edit("<b>RapidAPI-Key not found!</b>")
             
         if message.text.startswith('<a href="https://vm.tiktok.com/'):
+            if self.config["rapidapikey"] == '':
+                return await message.edit("<b>RapidAPI-Key not found!</b>")
+        
             reply = await message.get_reply_message()
             await message.edit("<b>Downloading...</b>")
             
@@ -122,14 +122,20 @@ class DownloadeTTMod(loader.Module):
                 video = await self.download(message.text)
                 
                 if video:
-
-                    await message.answer_video(
-                        video, 
-                        caption=self.config["caption"], 
-                        supports_streaming=True
                     
-                    )
-
+                    if reply:
+                        await reply.reply_video(
+                            video, 
+                            caption=self.config["caption"], 
+                            supports_streaming=True
+                        )
+                    else:
+                        await message.answer_video(
+                            video, 
+                            caption=self.config["caption"], 
+                            supports_streaming=True
+                        )
+                    
                     await message.delete()
 
                 else:
