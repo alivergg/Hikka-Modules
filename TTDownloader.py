@@ -56,15 +56,21 @@ class DownloadeTTMod(loader.Module):
         }
 
         querystring = {"url": link}
-
+        
         async with aiohttp.ClientSession() as client:
             async with client.request('GET', url, headers=headers, params=querystring) as r:
                 video_json = await r.json()
                 
-                if isinstance(video_json, list):
-                    video_json = video_json[0]
-            
-                return video_json['video'][0]
+                try:
+
+                    if isinstance(video_json, list):
+                        video_json = video_json[0]
+                
+                    return video_json['video'][0]
+                
+                except:
+
+                    return video_json
 
 
     async def dlttcmd(self, message: Message):
@@ -83,7 +89,6 @@ class DownloadeTTMod(loader.Module):
         try:
             video = await self.download(text)
             
-            logging.info(video)
             if video:
 
                 await message.client.send_file(
@@ -98,7 +103,10 @@ class DownloadeTTMod(loader.Module):
 
             else:
 
-                await message.edit("<b>Failed to download video.</b>")
+                if not video.startswith('http'):
+                    await message.edit(video)
+                else:
+                    await message.edit("<b>Failed to download video.</b>")
             
         except Exception as ex:
                 
@@ -125,25 +133,28 @@ class DownloadeTTMod(loader.Module):
             reply = await message.get_reply_message()
             await message.edit("<b>Downloading...</b>")
             
-            # try:
-            video = await self.download(message.text)
-            
-            if video:
+            try:
+                video = await self.download(message.text)
                 
-                await message.client.send_file(
-                    message.to_id, 
-                    video, 
-                    reply_to=reply,
-                    supports_streaming=True,
-                    caption=self.config["caption"]
-                )
-                
-                await message.delete()
+                if video:
+                    
+                    await message.client.send_file(
+                        message.to_id, 
+                        video, 
+                        reply_to=reply,
+                        supports_streaming=True,
+                        caption=self.config["caption"]
+                    )
+                    
+                    await message.delete()
 
-            else:
+                else:
 
+                    if not video.startswith('http'):
+                        await message.edit(video)
+                    else:
+                        await message.edit("<b>Failed to download video.</b>")
+            except:
                 await message.edit("<b>Failed to download video.</b>")
-            # except:
-            #     await message.edit("<b>Failed to download video.</b>")
                     
   
