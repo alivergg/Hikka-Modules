@@ -46,7 +46,7 @@ class DownloadeTTMod(loader.Module):
         )
 
     async def download(self, link):
-        url = "https://tiktok-downloader-download-tiktok-videos-without-watermark.p.rapidapi.com/vid/index"
+        url = "https://tiktok-downloader-download-tiktok-videos-without-watermark.p.rapidapi.com/index"
 
         headers = {
             "X-RapidAPI-Key": self.config["rapidapikey"],
@@ -58,6 +58,8 @@ class DownloadeTTMod(loader.Module):
         async with aiohttp.ClientSession() as client:
             async with client.request('GET', url, headers=headers, params=querystring) as r:
                 video_json = await r.json()
+
+                logging.info(video_json)
 
                 if isinstance(video_json, list):
                     video_json = video_json[0]
