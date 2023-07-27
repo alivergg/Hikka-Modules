@@ -86,13 +86,14 @@ class DownloadeTTMod(loader.Module):
             logging.info(video)
             if video:
 
-                await message.answer_video(
+                await message.client.send_file(
+                    message.to_id, 
                     video, 
-                    caption=self.config["caption"], 
-                    supports_streaming=True
-                
+                    reply_to=reply,
+                    supports_streaming=True,
+                    caption=self.config["caption"]
                 )
-
+                
                 await message.delete()
 
             else:
@@ -133,7 +134,8 @@ class DownloadeTTMod(loader.Module):
                     message.to_id, 
                     video, 
                     reply_to=reply,
-                    supports_streaming=True
+                    supports_streaming=True,
+                    caption=self.config["caption"]
                 )
                 
                 await message.delete()
