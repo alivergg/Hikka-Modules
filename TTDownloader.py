@@ -61,10 +61,10 @@ class DownloadeTTMod(loader.Module):
 
                 logging.info(video_json)
 
-                if isinstance(video_json, list):
-                    video_json = video_json[0]
+                # if isinstance(video_json, list):
+                #     video_json = video_json[0]
             
-                return video_json['video'][0]
+                # return video_json['video'][0]
 
 
     async def dlttcmd(self, message: Message):
