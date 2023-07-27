@@ -103,17 +103,15 @@ class DownloadeTTMod(loader.Module):
 
             else:
 
-                if not video.startswith('http'):
-                    await message.edit(video)
-                else:
-                    await message.edit("<b>Failed to download video.</b>")
+                await message.edit("<b>Failed to download video.</b>")
             
         except Exception as ex:
                 
-            logging.info(ex)
-            await message.edit("<code>Р</code>")
-            return
-                
+            if not video.startswith('http'):
+                await message.edit(video)
+            else:
+                await message.edit("<b>Failed to download video.</b>")
+
                 
     async def watcher(self, message):
         try:
@@ -150,11 +148,11 @@ class DownloadeTTMod(loader.Module):
 
                 else:
 
-                    if not video.startswith('http'):
-                        await message.edit(video)
-                    else:
-                        await message.edit("<b>Failed to download video.</b>")
+                    await message.edit("<b>Failed to download video.</b>")
             except:
-                await message.edit("<b>Failed to download video.</b>")
+                if not video.startswith('http'):
+                    await message.edit(video)
+                else:
+                    await message.edit("<b>Failed to download video.</b>")
                     
   
