@@ -59,6 +59,7 @@ class DownloadeTTMod(loader.Module):
             async with client.request('GET', url, headers=headers, params=querystring) as r:
                 video_json = await r.json()
 
+                logging.info(link)
                 logging.info(video_json)
 
                 # if isinstance(video_json, list):
