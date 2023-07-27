@@ -74,7 +74,7 @@ class DownloadeTTMod(loader.Module):
             text = await message.get_reply_message()
 
         if self.config["rapidapikey"] == '':
-            return await message.edit("<b>RapidAPI-Key not found!</b>")
+            return await message.edit("<b>RapidAPI-Key not found! Get it on https://rapidapi.com/maatootz/api/tiktok-downloader-download-tiktok-videos-without-watermark</b>")
             
         await message.edit("<b>Downloading...</b>")
             
@@ -97,9 +97,10 @@ class DownloadeTTMod(loader.Module):
 
                 await message.edit("<b>Failed to download video.</b>")
             
-        except YouBlockedUserError:
-        
-            await message.edit("<code>Разблокируй @ttk_downloader_bot</code>")
+        except Exception as ex:
+                
+            logging.info(ex)
+            await message.edit("<code>Р</code>")
             return
                 
                 
@@ -116,7 +117,7 @@ class DownloadeTTMod(loader.Module):
             
         if message.text.startswith('<a href="https://vm.tiktok.com/'):
             if self.config["rapidapikey"] == '':
-                return await message.edit("<b>RapidAPI-Key not found!</b>")
+                return await message.edit("<b>RapidAPI-Key not found! Get it on https://rapidapi.com/maatootz/api/tiktok-downloader-download-tiktok-videos-without-watermark</b>")
         
             reply = await message.get_reply_message()
             await message.edit("<b>Downloading...</b>")
@@ -145,7 +146,8 @@ class DownloadeTTMod(loader.Module):
 
                     await message.edit("<b>Failed to download video.</b>")
                     
-            except YouBlockedUserError:
-            
-                await message.edit("<code>Разблокируй @ttk_downloader_bot</code>")
+            except Exception as ex:
+                
+                logging.info(ex)
+                await message.edit("<code>Р</code>")
                 return
