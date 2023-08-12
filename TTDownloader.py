@@ -2,10 +2,14 @@
 
 # Module author: @alivergg
 
+import io
 import logging
-from asyncio import sleep
+import os
+import uuid
 import aiohttp
 from bs4 import BeautifulSoup
+import requests
+from moviepy.editor import *
 
 from telethon.tl.patched import Message
 
@@ -15,15 +19,17 @@ from telethon.tl.types import MessageEntityTextUrl, MessageEntityUrl
 
 from .. import loader, utils
 
-
 logger = logging.getLogger(__name__)
 
+
 @loader.tds
-class DownloadeTTMod(loader.Module):
+class DownloaderTTMod(loader.Module):
     """
-    Module for downdoad tik-tok videos.
+    Module for download tik-tok videos.
     
     .dltt {url} OR (reply to message)
+
+    https://rapidapi.com/yi005/api/tiktok-download-without-watermark
     """
 
     strings = {"name": "TTDownloader"}
@@ -31,7 +37,7 @@ class DownloadeTTMod(loader.Module):
     def __init__(self):
         self.config = loader.ModuleConfig(
             loader.ConfigValue(
-                "rapidapikey",
+                "rapid-apikey",
                 "",
                 "X-RapidAPI-Key",
                 validator=loader.validators.String(),
@@ -41,118 +47,130 @@ class DownloadeTTMod(loader.Module):
                 "",
                 "Video caption",
                 validator=loader.validators.String(),
+            ),
+            loader.ConfigValue(
+                "cut-sound",
+                False,
+                "Flag that indicates whether to cut the sound for the pictures count (only for tiktok with pictures)",
+                validator=loader.validators.Boolean(),
             )
         )
 
-    async def download(self, link):
-        soup = BeautifulSoup(link, 'html.parser')
-        link = soup.get_text()
+    async def download(self, link: str):
+        if link.startswith('<a'):
+            soup = BeautifulSoup(link, 'html.parser')
+            link = soup.get_text()
 
-        url = "https://tiktok-downloader-download-tiktok-videos-without-watermark.p.rapidapi.com/index"
+        url = "https://tiktok-download-without-watermark.p.rapidapi.com/analysis"
 
         headers = {
-            "X-RapidAPI-Key": self.config["rapidapikey"],
-            "X-RapidAPI-Host": "tiktok-downloader-download-tiktok-videos-without-watermark.p.rapidapi.com"
+            "X-RapidAPI-Key": self.config["rapid-apikey"],
+            'X-RapidAPI-Host': "tiktok-download-without-watermark.p.rapidapi.com"
         }
 
         querystring = {"url": link}
-        
+
         async with aiohttp.ClientSession() as client:
             async with client.request('GET', url, headers=headers, params=querystring) as r:
                 video_json = await r.json()
-                
-                try:
 
-                    if isinstance(video_json, list):
-                        video_json = video_json[0]
-                
-                    return video_json['video'][0]
-                
-                except:
+                return video_json
+            
 
-                    return video_json
+    async def send_video(self, message: Message, link: str, reply = None):
+        video = await self.download(link)
+        
+        if video.get('msg', None) is None:
+            return await message.edit(video['message'])
+        
+        if video['msg'] != 'success':
+            return await message.edit(video['msg'])
+
+        if video['data']['duration'] == 0:
+
+            image_clips = []
+            clips = []
+
+            for image_url in video['data']['images']:
+                response = requests.get(image_url)
+                image_data = response.content
+
+                image_path = f"image_{str(uuid.uuid4())}.jpg"
+                with open(image_path, 'wb') as f:
+                    f.write(image_data)
+                
+                clips.append(ImageClip(image_path, duration=2))
+                image_clips.append(image_path)
+
+
+            response = requests.get(video['data']['play'])
+            sound_data = response.content
+
+            sound_path = f"sound_{str(uuid.uuid4())}.mp3"
+            with open(sound_path, 'wb') as f:
+                f.write(sound_data)
+
+            audioclip = AudioFileClip(sound_path)
+
+            final_clip = concatenate_videoclips(clips, method='compose')
+            if self.config["cut-sound"] and audioclip.duration > final_clip.duration:
+                audioclip.set_duration(final_clip.duration)
+
+            final_clip = final_clip.set_audio(audioclip)
+            output_file_path = f"video_{str(uuid.uuid4())}.mp4"
+            final_clip.write_videofile(output_file_path, fps=24)
+
+            await message.client.send_file(
+                message.to_id,
+                output_file_path,
+                reply_to=reply,
+                caption=self.config["caption"]
+            )
+
+            for i in image_clips:
+                os.remove(i)
+            os.remove(sound_path)
+            os.remove(output_file_path)
+
+        else:
+            await message.client.send_file(
+                message.to_id,
+                video['data']['play'],
+                reply_to=reply,
+                supports_streaming=True,
+                caption=self.config["caption"]
+            )
+
+        await message.delete()
 
 
     async def dlttcmd(self, message: Message):
         """TikTok video downloader"""
         reply = await message.get_reply_message()
         text = utils.get_args_raw(message)
-        
+
         if reply:
             text = await message.get_reply_message()
 
-        if self.config["rapidapikey"] == '':
-            return await message.edit("<b>RapidAPI-Key not found! Get it on https://rapidapi.com/maatootz/api/tiktok-downloader-download-tiktok-videos-without-watermark</b>")
-            
         await message.edit("<b>Downloading...</b>")
-            
-        try:
-            video = await self.download(text)
-            
-            if video:
 
-                await message.client.send_file(
-                    message.to_id, 
-                    video, 
-                    reply_to=reply,
-                    supports_streaming=True,
-                    caption=self.config["caption"]
-                )
-                
-                await message.delete()
+        await self.send_video(message, text, reply)
 
-            else:
+        
 
-                await message.edit("<b>Failed to download video.</b>")
-            
-        except Exception as ex:
-                
-            if not 'http' in str(video):
-                await message.edit(str(video))
-            else:
-                await message.edit("<b>Failed to download video.</b>")
-
-                
-    async def watcher(self, message):
+    async def watcher(self, message: Message):
         try:
             me_id = (await message.client.get_me()).id
             if message.sender_id != me_id:
                 return
-                
-            if len(message.text) < 5:
+
+            if len(message.text) < 10:
                 return
         except:
             return
-            
+
         if message.text.startswith('<a href="https://vm.tiktok.com/'):
-            if self.config["rapidapikey"] == '':
-                return await message.edit("<b>RapidAPI-Key not found! Get it on https://rapidapi.com/maatootz/api/tiktok-downloader-download-tiktok-videos-without-watermark</b>")
-        
+
             reply = await message.get_reply_message()
             await message.edit("<b>Downloading...</b>")
-            
-            try:
-                video = await self.download(message.text)
-                
-                if video:
-                    
-                    await message.client.send_file(
-                        message.to_id, 
-                        video, 
-                        reply_to=reply,
-                        supports_streaming=True,
-                        caption=self.config["caption"]
-                    )
-                    
-                    await message.delete()
-
-                else:
-
-                    await message.edit("<b>Failed to download video.</b>")
-            except:
-                if not 'http' in str(video):
-                    await message.edit(str(video))
-                else:
-                    await message.edit("<b>Failed to download video.</b>")
-                    
-  
+            await self.send_video(message, message.text, reply)
