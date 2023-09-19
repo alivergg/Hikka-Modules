@@ -3,10 +3,17 @@ import glob
 import subprocess
 
 from telethon.tl.types import Message
-from yt_dlp import YoutubeDL
+from pytube import YouTube
+from moviepy.editor import *
 import logging
+import ssl
 
 from .. import loader, utils
+
+
+ssl._create_default_https_context = ssl._create_stdlib_context
+VIDEO_SAVE_DIRECTORY = "./videos"
+AUDIO_SAVE_DIRECTORY = "./audio"
 
 
 @loader.tds
@@ -28,63 +35,47 @@ class YouTubeMod(loader.Module):
         "_cls_doc": "Скачать YouTube видео",
     }
 
+    @staticmethod
+    def _mp4_to_mp3(mp4, mp3):
+        fileconv = AudioFileClip(mp4)
+        fileconv.write_audiofile(mp3)
+        fileconv.close()
+
     @loader.unrestricted
     async def ytcmd(self, message: Message):
         """[mp3] <ссылка> - Скачать видео с YouTube"""
         args = utils.get_args_raw(message)
-        message = await utils.answer(message, self.strings("downloading"))
+        message = await utils.answer(message, self.strings["downloading"])
 
         ext = False
         if len(args.split()) > 1:
             ext, args = args.split(maxsplit=1)
 
         if not args:
-            return await utils.answer(message, self.strings("args"))
+            return await utils.answer(message, self.strings["args"])
 
-        ydl_opts = {
-            "outtmpl": "/tmp/%(title)s.%(ext)s",
-            "writethumbnail": True,
-        }
-
-        if ext == "mp3":
-            ydl_opts["postprocessors"] = [
-                {
-                    "key": "FFmpegExtractAudio",
-                    "preferredcodec": "mp3",
-                    "preferredquality": "192",
-                }
-            ]
-
-        with YoutubeDL(ydl_opts) as ydl:
-            try:
-                info = ydl.extract_info(args, download=True)
-            except Exception:
-                await utils.answer(message, self.strings("not_found"))
-                return
-
-            path = ydl.prepare_filename(info)
-
+        video = YouTube(args)
+        try:
             if ext == "mp3":
-                filename, ext = os.path.splitext(path)
-                out = f"{filename}.mp3"
-                subprocess.call(
-                    ["ffmpeg", "-y", "-i", path, out],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.STDOUT,
-                )
-                
-                await self._client.send_file(message.peer_id, out)
+                path = (video.streams.filter(only_audio=True).first().download(AUDIO_SAVE_DIRECTORY))
 
+                audio_path = AUDIO_SAVE_DIRECTORY + '/' + video.title + '.mp3'
+                self._mp4_to_mp3(path, audio_path)
+
+                await self._client.send_file(message.peer_id, audio_path)
+                os.remove(path)
+                os.remove(audio_path)
             else:
-                await self._client.send_file(message.peer_id, path)
+                path = (video.streams.filter(progressive=True, file_extension='mp4').
+                        order_by('resolution').desc().first().download(VIDEO_SAVE_DIRECTORY))
 
-            try:
-                file_pattern = os.path.join("/tmp", filename + '.*')
-                file_list = glob.glob(file_pattern)
-                for file_path in file_list:
-                    os.remove(file_path)
-            except:
-                pass
+                await self._client.send_file(message.peer_id, path, supports_streaming=True)
+                os.remove(path)
+
+        except Exception as ex:
+            logging.error(ex)
+            await utils.answer(message, self.strings["not_found"])
+            return
 
         if message.out:
             await message.delete()
