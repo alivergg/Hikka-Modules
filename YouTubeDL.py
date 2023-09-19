@@ -54,7 +54,7 @@ class YouTubeMod(loader.Module):
         if not args:
             return await utils.answer(message, self.strings["args"])
 
-        video = YouTube(args)
+        video = YouTube(args, use_oauth=True)
         try:
             if ext == "mp3":
                 path = (video.streams.filter(only_audio=True).first().download(AUDIO_SAVE_DIRECTORY))
